@@ -10,6 +10,10 @@ const geistSans = Geist({
 export const metadata: Metadata = {
   title: "Kelato — Dashboard",
   description: "Panel de ventas Kelato",
+  icons: {
+    icon: "/logo.jpeg",
+    apple: "/logo.jpeg",
+  },
 };
 
 export default function RootLayout({
