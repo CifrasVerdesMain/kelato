@@ -5,6 +5,23 @@ import { format, parseISO, isValid } from "date-fns";
 export const dynamic = "force-dynamic";
 export const revalidate = 3600;
 
+export default async function HomePage() {
+  try {
+    return await DashboardPage();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return (
+      <div className="min-h-screen flex items-center justify-center p-8" style={{ background: "var(--background)" }}>
+        <div className="max-w-lg w-full rounded-xl p-6 shadow" style={{ background: "var(--card-bg)", border: "1px solid var(--border)" }}>
+          <h1 className="text-lg font-bold mb-2" style={{ color: "var(--primary)" }}>Error al cargar datos</h1>
+          <p className="text-sm mb-4 opacity-70">No se pudo conectar con Google Sheets. Verifica las variables de entorno en Vercel.</p>
+          <pre className="text-xs p-3 rounded overflow-auto" style={{ background: "var(--muted)", color: "var(--foreground)" }}>{message}</pre>
+        </div>
+      </div>
+    );
+  }
+}
+
 function safeParseMonth(dateStr: string): string {
   try {
     const d = parseISO(dateStr);
@@ -14,7 +31,7 @@ function safeParseMonth(dateStr: string): string {
   return dateStr;
 }
 
-export default async function HomePage() {
+async function DashboardPage() {
   const [salesData, costsData] = await Promise.all([
     getSalesData(),
     getCostsData(),

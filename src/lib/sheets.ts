@@ -10,7 +10,12 @@ function parseCurrency(s: string): number {
 }
 
 async function getSheets() {
-  const credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY!);
+  const raw = process.env.GOOGLE_SERVICE_ACCOUNT_KEY!;
+  // Fix private key newlines that sometimes get mangled when pasting JSON into env var UIs
+  const credentials = JSON.parse(raw);
+  if (typeof credentials.private_key === "string") {
+    credentials.private_key = credentials.private_key.replace(/\\n/g, "\n");
+  }
   const auth = new google.auth.GoogleAuth({
     credentials,
     scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
