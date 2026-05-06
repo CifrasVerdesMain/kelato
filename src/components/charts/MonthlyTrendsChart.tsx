@@ -15,9 +15,9 @@ import { es } from "date-fns/locale";
 
 interface MonthlyDataPoint {
   month: string;
-  revenue: number;
-  cost: number;
-  profit: number;
+  ingresos: number;
+  gastos: number;
+  ganancia: number;
 }
 
 function formatMonth(m: string): string {
@@ -32,6 +32,12 @@ function formatCurrency(value: number): string {
   return `$${value.toLocaleString("es-MX", { maximumFractionDigits: 0 })}`;
 }
 
+const LABELS: Record<string, string> = {
+  ingresos: "Ingresos Netos",
+  gastos: "Gastos",
+  ganancia: "Ganancia",
+};
+
 export default function MonthlyTrendsChart({ data }: { data: MonthlyDataPoint[] }) {
   if (!data.length) {
     return (
@@ -42,7 +48,6 @@ export default function MonthlyTrendsChart({ data }: { data: MonthlyDataPoint[] 
   }
 
   const chartData = data.map((d) => ({ ...d, label: formatMonth(d.month) }));
-  const hasCosts = data.some((d) => d.cost > 0);
 
   return (
     <ResponsiveContainer width="100%" height={280}>
@@ -61,14 +66,10 @@ export default function MonthlyTrendsChart({ data }: { data: MonthlyDataPoint[] 
           tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
         />
         <Tooltip
-          formatter={(value, name) => {
-            const labels: Record<string, string> = {
-              revenue: "Ingresos",
-              cost: "Costos",
-              profit: "Utilidad",
-            };
-            return [formatCurrency(Number(value ?? 0)), labels[String(name)] ?? String(name)];
-          }}
+          formatter={(value, name) => [
+            formatCurrency(Number(value ?? 0)),
+            LABELS[String(name)] ?? String(name),
+          ]}
           labelFormatter={(label) => label}
           contentStyle={{
             background: "#FFFFFF",
@@ -78,18 +79,12 @@ export default function MonthlyTrendsChart({ data }: { data: MonthlyDataPoint[] 
           }}
         />
         <Legend
-          formatter={(value) =>
-            ((({ revenue: "Ingresos", cost: "Costos", profit: "Utilidad" } as Record<string, string>)[value]) ?? value)
-          }
+          formatter={(value) => LABELS[value] ?? value}
           wrapperStyle={{ fontSize: 12 }}
         />
-        <Bar dataKey="revenue" fill="#B5432A" radius={[4, 4, 0, 0]} />
-        {hasCosts && (
-          <Bar dataKey="cost" fill="#E8A090" radius={[4, 4, 0, 0]} />
-        )}
-        {hasCosts && (
-          <Bar dataKey="profit" fill="#D4724A" radius={[4, 4, 0, 0]} />
-        )}
+        <Bar dataKey="ingresos" fill="#B5432A" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="gastos" fill="#E8A090" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="ganancia" fill="#6BAA75" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );

@@ -50,6 +50,22 @@ export default function PresentationChart({ data }: { data: PresentationDataPoin
           innerRadius={65}
           outerRadius={100}
           paddingAngle={3}
+          label={({ name, value, cx, x, y }) => {
+            const v = Number(value ?? 0);
+            return (
+              <text
+                x={x}
+                y={y}
+                fill="#2D1810"
+                textAnchor={x > cx ? "start" : "end"}
+                dominantBaseline="central"
+                fontSize={11}
+              >
+                {`$${(v / 1000).toFixed(1)}k`}
+              </text>
+            );
+          }}
+          labelLine={{ stroke: "#C8B0A0", strokeWidth: 1 }}
         >
           {data.map((_, i) => (
             <Cell key={i} fill={COLORS[i % COLORS.length]} />

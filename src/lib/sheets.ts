@@ -3,6 +3,7 @@ import { google } from "googleapis";
 const SPREADSHEET_ID = process.env.GOOGLE_SPREADSHEET_ID!;
 const SALES_TAB = process.env.SALES_TAB ?? "daily_sales_detail";
 const COSTS_TAB = process.env.COSTS_TAB ?? "Costos";
+const REVENUE_TAB = process.env.REVENUE_TAB ?? "Revenue";
 
 function parseCurrency(s: string): number {
   if (!s) return 0;
@@ -77,6 +78,34 @@ export async function getSalesData(): Promise<SalesRow[]> {
       receipts_count: parseFloat(obj.receipts_count) || 0,
     };
   });
+}
+
+export interface RevenueRow {
+  date: string;
+  ingresosNetos: number;
+  gastos: number;
+  ganancia: number;
+}
+
+export async function getRevenueData(): Promise<RevenueRow[]> {
+  const sheets = await getSheets();
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${REVENUE_TAB}!A:D`,
+  });
+
+  const rows = response.data.values ?? [];
+  if (rows.length < 2) return [];
+
+  // Headers: Date, Ingresos Netos, Gastos, Ganancia
+  return rows.slice(1)
+    .filter((row) => row[0])
+    .map((row) => ({
+      date: String(row[0] ?? ""),
+      ingresosNetos: parseCurrency(String(row[1] ?? "")),
+      gastos: parseCurrency(String(row[2] ?? "")),
+      ganancia: parseCurrency(String(row[3] ?? "")),
+    }));
 }
 
 export async function getCostsData(): Promise<CostRow[]> {

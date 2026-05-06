@@ -17,8 +17,8 @@ interface DashboardData {
     roi: number | null;
     profit: number;
   };
-  dailyRevenue: { date: string; revenue: number }[];
-  monthlyTrends: { month: string; revenue: number; cost: number; profit: number }[];
+  dailyRevenue: { date: string; ingresos: number; gastos: number; ganancia: number }[];
+  monthlyTrends: { month: string; ingresos: number; gastos: number; ganancia: number }[];
   topFlavors: { flavor: string; revenue: number; qty: number }[];
   salesByPresentation: { presentation: string; revenue: number }[];
 }
@@ -47,9 +47,7 @@ function KPICard({
         color: highlight ? "#FFFFFF" : "var(--foreground)",
       }}
     >
-      <p
-        className="text-xs font-medium uppercase tracking-wide mb-1 opacity-70"
-      >
+      <p className="text-xs font-medium uppercase tracking-wide mb-1 opacity-70">
         {label}
       </p>
       <p className="text-2xl font-bold">{value}</p>
@@ -58,22 +56,13 @@ function KPICard({
   );
 }
 
-function ChartCard({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div
       className="rounded-xl p-5 shadow-sm"
       style={{ background: "var(--card-bg)", border: "1px solid var(--border)" }}
     >
-      <h2
-        className="text-sm font-semibold mb-4"
-        style={{ color: "var(--foreground)" }}
-      >
+      <h2 className="text-sm font-semibold mb-4" style={{ color: "var(--foreground)" }}>
         {title}
       </h2>
       {children}
@@ -98,30 +87,16 @@ export default function Dashboard({ data }: { data: DashboardData }) {
     return data.dailyRevenue.filter((d) => d.date?.startsWith(selectedMonth));
   }, [data.dailyRevenue, selectedMonth]);
 
-  const filteredFlavors = useMemo(() => {
-    if (selectedMonth === "all") return data.topFlavors;
-    const flavorMap = new Map<string, { revenue: number; qty: number }>();
-    for (const d of data.dailyRevenue) {
-      if (!d.date?.startsWith(selectedMonth)) continue;
-      // Can't re-aggregate flavors from daily data alone; show all-time when filtered by month
-    }
-    // For monthly filtering, show top flavors from the monthly trends context
-    // Since we don't have day-level flavor breakdown per month, show all-time sorted
-    return data.topFlavors;
-  }, [data.topFlavors, selectedMonth, data.dailyRevenue]);
-
   const filteredSummary = useMemo(() => {
     if (selectedMonth === "all") return data.summary;
     const monthData = data.monthlyTrends.find((m) => m.month === selectedMonth);
     if (!monthData) return data.summary;
-    const cost = monthData.cost;
-    const revenue = monthData.revenue;
     return {
       ...data.summary,
-      totalRevenue: revenue,
-      totalCost: cost,
-      profit: revenue - cost,
-      roi: cost > 0 ? ((revenue - cost) / cost) * 100 : null,
+      totalRevenue: monthData.ingresos,
+      totalCost: monthData.gastos,
+      profit: monthData.ganancia,
+      roi: monthData.gastos > 0 ? (monthData.ganancia / monthData.gastos) * 100 : null,
     };
   }, [data.summary, data.monthlyTrends, selectedMonth]);
 
@@ -133,14 +108,9 @@ export default function Dashboard({ data }: { data: DashboardData }) {
 
   function formatMonthLabel(m: string): string {
     const [year, month] = m.split("-");
-    const months = [
-      "Ene", "Feb", "Mar", "Abr", "May", "Jun",
-      "Jul", "Ago", "Sep", "Oct", "Nov", "Dic",
-    ];
-    return `${months[parseInt(month) - 1]} ${year}`;
+    const names = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+    return `${names[parseInt(month) - 1]} ${year}`;
   }
-
-  const hasCosts = data.summary.totalCost > 0;
 
   return (
     <div className="min-h-screen" style={{ background: "var(--background)" }}>
@@ -150,50 +120,29 @@ export default function Dashboard({ data }: { data: DashboardData }) {
         style={{ background: "var(--card-bg)", borderBottom: "1px solid var(--border)" }}
       >
         <div className="flex items-center gap-3">
-          <Image
-            src="/logo.jpeg"
-            alt="Kelato"
-            width={120}
-            height={60}
-            className="object-contain"
-            priority
-          />
-          <span
-            className="text-sm font-semibold hidden sm:block"
-            style={{ color: "var(--primary)" }}
-          >
+          <Image src="/logo.jpeg" alt="Kelato" width={120} height={60} className="object-contain" priority />
+          <span className="text-sm font-semibold hidden sm:block" style={{ color: "var(--primary)" }}>
             Dashboard
           </span>
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Month filter */}
           <select
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
             className="text-sm rounded-lg px-3 py-1.5 outline-none cursor-pointer"
-            style={{
-              background: "var(--muted)",
-              border: "1px solid var(--border)",
-              color: "var(--foreground)",
-            }}
+            style={{ background: "var(--muted)", border: "1px solid var(--border)", color: "var(--foreground)" }}
           >
             <option value="all">Todo el período</option>
             {months.map((m) => (
-              <option key={m} value={m}>
-                {formatMonthLabel(m)}
-              </option>
+              <option key={m} value={m}>{formatMonthLabel(m)}</option>
             ))}
           </select>
 
           <button
             onClick={handleLogout}
             className="text-sm px-3 py-1.5 rounded-lg transition-opacity hover:opacity-80 cursor-pointer"
-            style={{
-              background: "var(--muted)",
-              border: "1px solid var(--border)",
-              color: "var(--foreground)",
-            }}
+            style={{ background: "var(--muted)", border: "1px solid var(--border)", color: "var(--foreground)" }}
           >
             Salir
           </button>
@@ -204,52 +153,25 @@ export default function Dashboard({ data }: { data: DashboardData }) {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         {/* KPI row */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <KPICard label="Ingresos netos" value={formatCurrency(filteredSummary.totalRevenue)} highlight />
           <KPICard
-            label="Ingresos netos"
-            value={formatCurrency(filteredSummary.totalRevenue)}
-            highlight
+            label="Ganancia"
+            value={formatCurrency(filteredSummary.profit)}
+            sub={`Gastos: ${formatCurrency(filteredSummary.totalCost)}`}
+          />
+          <KPICard
+            label="ROI"
+            value={filteredSummary.roi !== null ? `${filteredSummary.roi.toFixed(1)}%` : "—"}
           />
           <KPICard
             label="Unidades vendidas"
             value={filteredSummary.totalQty.toLocaleString("es-MX")}
           />
-          {hasCosts ? (
-            <>
-              <KPICard
-                label="Utilidad"
-                value={formatCurrency(filteredSummary.profit)}
-                sub={filteredSummary.totalCost > 0 ? `Costos: ${formatCurrency(filteredSummary.totalCost)}` : undefined}
-              />
-              <KPICard
-                label="ROI"
-                value={
-                  filteredSummary.roi !== null
-                    ? `${filteredSummary.roi.toFixed(1)}%`
-                    : "—"
-                }
-              />
-            </>
-          ) : (
-            <>
-              <KPICard
-                label="Órdenes"
-                value={Math.round(filteredSummary.totalOrders).toLocaleString("es-MX")}
-              />
-              <KPICard
-                label="Ticket promedio"
-                value={
-                  filteredSummary.totalOrders > 0
-                    ? formatCurrency(filteredSummary.totalRevenue / filteredSummary.totalOrders)
-                    : "—"
-                }
-              />
-            </>
-          )}
         </div>
 
         {/* Charts — row 1 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <ChartCard title="Ingresos diarios">
+          <ChartCard title="Ingresos, Gastos y Ganancia diarios">
             <DailyRevenueChart data={filteredDaily} />
           </ChartCard>
           <ChartCard title="Tendencia mensual">
@@ -260,7 +182,7 @@ export default function Dashboard({ data }: { data: DashboardData }) {
         {/* Charts — row 2 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <ChartCard title="Top sabores por ingresos">
-            <TopFlavorsChart data={filteredFlavors} />
+            <TopFlavorsChart data={data.topFlavors} />
           </ChartCard>
           <ChartCard title="Ventas por presentación">
             <PresentationChart data={data.salesByPresentation} />
@@ -268,10 +190,7 @@ export default function Dashboard({ data }: { data: DashboardData }) {
         </div>
       </main>
 
-      <footer
-        className="text-center text-xs py-4 mt-4"
-        style={{ color: "var(--primary-light)" }}
-      >
+      <footer className="text-center text-xs py-4 mt-4" style={{ color: "var(--primary-light)" }}>
         Cifras Verdes · Kelato · Datos actualizados cada hora
       </footer>
     </div>

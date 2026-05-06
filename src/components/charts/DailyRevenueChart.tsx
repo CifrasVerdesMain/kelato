@@ -7,6 +7,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
   ResponsiveContainer,
 } from "recharts";
 import { format, parseISO, isValid } from "date-fns";
@@ -14,7 +15,9 @@ import { es } from "date-fns/locale";
 
 interface DailyDataPoint {
   date: string;
-  revenue: number;
+  ingresos: number;
+  gastos: number;
+  ganancia: number;
 }
 
 function formatDate(dateStr: string): string {
@@ -44,9 +47,17 @@ export default function DailyRevenueChart({ data }: { data: DailyDataPoint[] }) 
     <ResponsiveContainer width="100%" height={280}>
       <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
         <defs>
-          <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#B5432A" stopOpacity={0.25} />
+          <linearGradient id="ingresosGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#B5432A" stopOpacity={0.2} />
             <stop offset="95%" stopColor="#B5432A" stopOpacity={0} />
+          </linearGradient>
+          <linearGradient id="gastosGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#E8A090" stopOpacity={0.2} />
+            <stop offset="95%" stopColor="#E8A090" stopOpacity={0} />
+          </linearGradient>
+          <linearGradient id="gananciaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#6BAA75" stopOpacity={0.2} />
+            <stop offset="95%" stopColor="#6BAA75" stopOpacity={0} />
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 3" stroke="#E8D9CE" vertical={false} />
@@ -64,7 +75,14 @@ export default function DailyRevenueChart({ data }: { data: DailyDataPoint[] }) 
           tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
         />
         <Tooltip
-          formatter={(value) => [formatCurrency(Number(value ?? 0)), "Ingresos"]}
+          formatter={(value, name) => {
+            const labels: Record<string, string> = {
+              ingresos: "Ingresos Netos",
+              gastos: "Gastos",
+              ganancia: "Ganancia",
+            };
+            return [formatCurrency(Number(value ?? 0)), labels[String(name)] ?? String(name)];
+          }}
           labelFormatter={(label) => label}
           contentStyle={{
             background: "#FFFFFF",
@@ -73,15 +91,15 @@ export default function DailyRevenueChart({ data }: { data: DailyDataPoint[] }) 
             fontSize: 12,
           }}
         />
-        <Area
-          type="monotone"
-          dataKey="revenue"
-          stroke="#B5432A"
-          strokeWidth={2}
-          fill="url(#revenueGrad)"
-          dot={false}
-          activeDot={{ r: 4, fill: "#B5432A" }}
+        <Legend
+          formatter={(value) =>
+            (({ ingresos: "Ingresos Netos", gastos: "Gastos", ganancia: "Ganancia" } as Record<string, string>)[value] ?? value)
+          }
+          wrapperStyle={{ fontSize: 12 }}
         />
+        <Area type="monotone" dataKey="ingresos" stroke="#B5432A" strokeWidth={2} fill="url(#ingresosGrad)" dot={false} activeDot={{ r: 4 }} />
+        <Area type="monotone" dataKey="gastos" stroke="#E8A090" strokeWidth={2} fill="url(#gastosGrad)" dot={false} activeDot={{ r: 4 }} />
+        <Area type="monotone" dataKey="ganancia" stroke="#6BAA75" strokeWidth={2} fill="url(#gananciaGrad)" dot={false} activeDot={{ r: 4 }} />
       </AreaChart>
     </ResponsiveContainer>
   );
